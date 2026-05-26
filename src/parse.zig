@@ -603,7 +603,7 @@ inline fn pop(name: []const u8) []const u8 {
 pub fn main(
     init: std.process.Init,
 ) !void {
-    const allocator = std.heap.c_allocator;
+    const allocator = init.arena.allocator();
     const io = init.io;
 
     var args = init.minimal.args.iterate();

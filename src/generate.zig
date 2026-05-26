@@ -501,7 +501,7 @@ pub fn main(
         0,
     );
 
-    const allocator = std.heap.c_allocator;
+    const allocator = init.arena.allocator();
     const copy = try allocator.dupeZ(u8, data);
     defer allocator.free(copy);
     const schema = try std.zon.parse.fromSliceAlloc(

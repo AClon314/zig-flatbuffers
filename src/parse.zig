@@ -602,9 +602,8 @@ inline fn pop(name: []const u8) []const u8 {
 
 pub fn main(
     init: std.process.Init,
-) !void 
-{
-    const allocator = std.heap.c_allocator;
+) !void {
+    const allocator = init.arena.allocator();
     const io = init.io;
 
     var args = init.minimal.args.iterate();
@@ -615,7 +614,7 @@ pub fn main(
         return;
     };
 
-    const file = try std.Io.Dir.cwd().openFile(io,schema_path, .{});
+    const file = try std.Io.Dir.cwd().openFile(io, schema_path, .{});
     defer file.close(io);
 
     const stat = try file.stat(io);

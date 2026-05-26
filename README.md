@@ -10,6 +10,7 @@ Efficient FlatBuffers decoders and encoders for Zig, in Zig.
   - [Runtime](#runtime)
     - [Decoding](#decoding)
     - [Building](#building)
+  - [Build-time codegen](#build-time-codegen)
 - [License](#license)
 
 ## Overview
@@ -229,6 +230,61 @@ const myschema = @import("myschema");
 }
 ```
 
+## Build-time codegen
+
+If you'd rather not check in the generated `.zon` and `.zig` files, the `parse` and `generate` modules are exposed as public modules and can be wired into your own `build.zig`. The example below runs the entire `.fbs` → `.bfbs` → `.zon` → `.zig` pipeline as part of the build graph, so the generated decoder is rebuilt automatically whenever a schema file changes. It assumes `flatc` is available on `PATH`.
+
+```zig
+const flatbuffers_dep = b.dependency("flatbuffers", .{});
+const flatbuffers = flatbuffers_dep.module("flatbuffers");
+
+const zfbs_parse = b.addExecutable(.{
+    .name = "zfbs-parse",
+    .root_module = flatbuffers_dep.module("parse"),
+});
+
+const zfbs_generate = b.addExecutable(.{
+    .name = "zfbs-generate",
+    .root_module = flatbuffers_dep.module("generate"),
+});
+
+// .fbs -> .bfbs (via flatc)
+const flatc_run = b.addSystemCommand(&.{
+    "flatc", "-b", "--schema", "--bfbs-comments", "--bfbs-builtins",
+});
+flatc_run.addArg("-o");
+const bfbs_dir = flatc_run.addOutputDirectoryArg("flatc-out");
+flatc_run.addFileArg(b.path("schemas/myschema.fbs"));
+// If your .fbs uses `include "..."`, list the included files here so the
+// build re-runs when they change (flatc itself resolves them by path).
+// for ([_][]const u8{ "schemas/Other.fbs", ... }) |inc|
+//     flatc_run.addFileInput(b.path(inc));
+const bfbs_file = bfbs_dir.path(b, "myschema.bfbs");
+
+// .bfbs -> .zon
+const parse_run = b.addRunArtifact(zfbs_parse);
+parse_run.addFileArg(bfbs_file);
+const zon_file = parse_run.captureStdOut(.{ .basename = "myschema.zon" });
+
+// .zon -> .zig
+const generate_run = b.addRunArtifact(zfbs_generate);
+generate_run.addFileArg(zon_file);
+const zig_file = generate_run.captureStdOut(.{ .basename = "myschema.zig" });
+
+// The generated .zig does `@import("myschema.zon")` by relative path,
+// so the two files must live in the same directory at build time.
+const wf = b.addWriteFiles();
+_ = wf.addCopyFile(zon_file, "myschema.zon");
+const zig_path = wf.addCopyFile(zig_file, "myschema.zig");
+
+const myschema = b.createModule(.{
+    .root_source_file = zig_path,
+    .imports = &.{ .{ .name = "flatbuffers", .module = flatbuffers } },
+});
+```
+
+The Zig compiler accepts the unformatted output of `zfbs-generate` directly, so there is no need to pipe through `zig fmt` at build time.
+
 ## License
 
-MIT © 2025 nDimensional Studios
+MIT © 2026 nDimensional Studios

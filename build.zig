@@ -44,7 +44,7 @@ pub fn build(b: *std.Build) void {
         b.step("parse", "Parse a .bfbs schema into ZON IR").dependOn(&run.step);
     }
 
-    const generate = b.createModule(.{
+    const generate = b.addModule("generate", .{
         .target = target,
         .optimize = optimize,
         .root_source_file = b.path("src/generate.zig"),

@@ -470,8 +470,7 @@ fn isInNamespace(namespace: ?[]const u8, name: []const u8) bool {
 
 pub fn main(
     init: std.process.Init,
-) !void 
-{
+) !void {
     const io = init.io;
 
     var args = init.minimal.args.iterate();
@@ -489,7 +488,7 @@ pub fn main(
     if (!std.mem.eql(u8, ir_filename[file_ext_index..], ".zon"))
         return error.InvalidFileExtension;
 
-    const file = try std.Io.Dir.cwd().openFile(io,ir_path, .{});
+    const file = try std.Io.Dir.cwd().openFile(io, ir_path, .{});
     defer file.close(io);
 
     const stat = try file.stat(io);
@@ -510,7 +509,7 @@ pub fn main(
         allocator,
         copy,
         null,
-        .{.ignore_unknown_fields = true}
+        .{ .ignore_unknown_fields = true },
     );
 
     // var parser = try Parser.init(std.heap.c_allocator, @alignCast(data));

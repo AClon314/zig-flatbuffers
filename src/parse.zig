@@ -231,11 +231,11 @@ pub const Parser = struct {
                             array.element = get_element: switch (field_type.element()) {
                                 .Bool => .bool,
                                 .Byte, .UByte, .Short, .UShort, .Int, .UInt, .Long, .ULong => {
-                                    const int = try getInteger(base_type);
+                                    const int = try getInteger(field_type.element());
                                     break :get_element .{ .int = int };
                                 },
                                 .Float, .Double => {
-                                    const float = try getFloat(base_type);
+                                    const float = try getFloat(field_type.element());
                                     break :get_element .{ .float = float };
                                 },
                                 .Obj => {
@@ -626,6 +626,7 @@ pub fn main(
         file.handle,
         0,
     );
+    defer std.posix.munmap(data);
 
     var parser = try Parser.init(allocator, @alignCast(data));
     defer parser.deinit();

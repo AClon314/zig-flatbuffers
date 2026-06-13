@@ -491,19 +491,11 @@ pub fn main(
     const file = try std.Io.Dir.cwd().openFile(io, ir_path, .{});
     defer file.close(io);
 
-    const stat = try file.stat(io);
-    const data = try std.posix.mmap(
-        null,
-        stat.size,
-        .{ .READ = true },
-        .{ .TYPE = .PRIVATE },
-        file.handle,
-        0,
-    );
-
     const allocator = init.arena.allocator();
-    const copy = try allocator.dupeZ(u8, data);
+    const stat = try file.stat(io);
+    const copy = try allocator.allocSentinel(u8, stat.size, 0);
     defer allocator.free(copy);
+    _ = try file.readPositionalAll(io, copy[0..stat.size], 0);
     const schema = try std.zon.parse.fromSliceAlloc(
         flatbuffers.types.Schema,
         allocator,
